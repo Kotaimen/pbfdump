@@ -60,12 +60,15 @@ class Reducer(pbfdump.Reducer):
         self.total_relations = 0
 
         self.dump = open(dumpfile, 'w')
-        self.cache = pbfdump.nodecache.NodeCache()
-        print 'Loading node cache...'
-        self.cache.load(cachefile)
-        print '%d coordinates loaded' % self.cache.size()
-
+        self.cache = None
+        
     def reduce(self, map_result):
+        if self.cache is None:
+            self.cache = pbfdump.nodecache.NodeCache()
+            print 'Loading node cache...'
+            self.cache.load(cachefile)
+            print '%d coordinates loaded' % self.cache.size()
+            
         (node_count, way_count, relation_count), buf = map_result
         self.total_nodes += node_count
         self.total_ways += way_count
