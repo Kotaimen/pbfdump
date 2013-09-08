@@ -15,7 +15,6 @@ import argparse
 import gzip
 import pbfdump
 
-
 class Mapper(pbfdump.Mapper):
 
     def setup(self):
@@ -55,29 +54,63 @@ class Mapper(pbfdump.Mapper):
 
 class Reducer(pbfdump.Reducer):
 
-    def __init__(self, dumpfile):
+    def __init__(self, dumpfile, cachefile):
         self.total_nodes = 0
         self.total_ways = 0
         self.total_relations = 0
 
-        self.dumpfile = open(dumpfile, 'w')
-#        self.dumpfile = gzip.GzipFile(dumpfile, 'w')
+        self.dump = open(dumpfile, 'w')
+        self.cache = pbfdump.nodecache.NodeCache()
+        print 'Loading node cache...'
+        self.cache.load(cachefile)
+        print '%d coordinates loaded' % self.cache.size()
 
     def reduce(self, map_result):
         (node_count, way_count, relation_count), buf = map_result
-        self.dumpfile.write(buf)
         self.total_nodes += node_count
         self.total_ways += way_count
         self.total_relations += relation_count
 
+        for line in buf.splitlines():
+            feature_type, json_body = tuple(line.split('\t', 1))
+            feature_data = json.loads(json_body)
+            self.dump.write(feature_type) # type
+            self.dump.write('\t')
+            self.dump.write(str(feature_data[0])) #osmid
+            self.dump.write('\t')
+            
+            if feature_type == 'way':
+                coords = self.cache.findall(feature_data[2])
+                assert None not in coords
+                json.dump(dict(osm_id=feature_data[0],
+                               tags=feature_data[1],
+                               geometry=coords),
+                          self.dump)
+            if feature_type == 'node':
+                json.dump(dict(osm_id=feature_data[0],
+                               tags=feature_data[1],
+                               geometry=feature_data[2]),
+                          self.dump)                
+            elif feature_type == 'relation':
+                json.dump(dict(osm_id=feature_data[0],
+                               tags=feature_data[1],
+                               relation=feature_data[2]),
+                          self.dump)                                
+            self.dump.write('\n')
+
+#         self.dump.write(buf)
+
     def progress(self):
-        return '%0dk nodes, %dk ways, %dk relations' %  \
-            (self.total_nodes / 1000, 
-             self.total_ways / 1000, 
+        return '%dk nodes, %dk ways, %dk relations' %  \
+            (self.total_nodes / 1000,
+             self.total_ways / 1000,
              self.total_relations / 1000)
 
     def report(self):
-        pass
+        return '%d nodes, %d ways, %d relations' %  \
+            (self.total_nodes,
+             self.total_ways,
+             self.total_relations)
 
 
 #===============================================================================
@@ -93,6 +126,7 @@ def main():
 
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('input_file')
+    arg_parser.add_argument('cache_file')
     arg_parser.add_argument('output_file')
     arg_parser.add_argument('--expected-size', '-s', dest='expected_size',
                             type=int, default=0)
@@ -103,7 +137,7 @@ def main():
 
     mapper = Mapper()
 
-    reducer = Reducer(args.output_file)
+    reducer = Reducer(args.output_file, args.cache_file)
 
     parser = pbfdump.PBFParser(args.input_file,
                                mapper=mapper,
@@ -112,6 +146,7 @@ def main():
                                debug=False)
 
     result = parser.process()
+    print result
 
 if __name__ == '__main__':
     main()

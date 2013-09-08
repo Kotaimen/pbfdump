@@ -74,7 +74,7 @@ def main():
 
     result = parser.process()
 
-    print result
+    print 'Scan complete:', result
 
 
 if __name__ == '__main__':
