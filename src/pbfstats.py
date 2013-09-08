@@ -13,6 +13,10 @@ import pbfdump
 
 class Mapper(pbfdump.Mapper):
 
+
+    def setup(self):
+        self.num_nodes = 0
+
     def map_nodes(self, nodes):
         self.num_nodes = len(list(nodes))
 

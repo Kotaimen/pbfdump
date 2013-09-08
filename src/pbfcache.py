@@ -9,8 +9,10 @@ from pprint import pprint
 
 import os
 import sys
-import pbfdump
+import gzip
 import argparse
+
+import pbfdump
 
 
 class Mapper(pbfdump.Mapper):
@@ -33,10 +35,10 @@ class Reducer(pbfdump.Reducer):
             self.nodecache.insert(osmid, coord)
 
     def progress(self):
-        return '%dk nodes loaded' % (self.nodecache.size() / 1000)
+        return '%dk coordinates loaded.' % (self.nodecache.size() / 1000)
 
     def report(self):
-        print 'Dumping nodecache to', self.dumpfile
+        print 'Dumping coordinate cache to:', self.dumpfile
         self.nodecache.dump(self.dumpfile)
         print '...done.'
 
@@ -53,17 +55,17 @@ def main():
 
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('pbf_file')
-    arg_parser.add_argument('node_cache')
+    arg_parser.add_argument('coordinate_cache')
     arg_parser.add_argument('--expected-size', '-s', dest='expected_size',
                             type=int, default=0)
     arg_parser.add_argument('--workers', '-w', dest='workers',
-                            type=int, default=0)
+                            type=int, default=1)
 
     args = arg_parser.parse_args()
 
     mapper = Mapper()
 
-    reducer = Reducer(args.node_cache,
+    reducer = Reducer(args.coordinate_cache,
                       args.expected_size)
 
     parser = pbfdump.PBFParser(args.pbf_file,

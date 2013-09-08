@@ -21,10 +21,14 @@ class Mapper(object):
     def __call__(self, args):
         filename, block_offset, block_size = args
         block = PrimitiveBlockParser(filename, block_offset, block_size)
+        self.setup()
         self.map_nodes(block.nodes())
         self.map_ways(block.ways())
         self.map_relations(block.relations())
         return self.result()
+
+    def setup(self):
+        pass
 
     def map_nodes(self, nodes):
         pass
@@ -94,15 +98,16 @@ class PBFParser(object):
             self._tac(current_block, total_blocks, self._reducer.progress())
 
         if self._debug:
-
             for map_result in itertools.imap(self._mapper, self._blocks):
                 current_block += 1
                 reducer(current_block, map_result)
+                del map_result
         else:
             pool = multiprocessing.Pool(processes=self._worker)
 
-            for map_result in pool.imap_unordered(self._mapper, self._blocks):
+            for map_result in pool.imap(self._mapper, self._blocks):
                 current_block += 1
                 reducer(current_block, map_result)
-
+                del map_result
+                
         return self._reducer.report()
