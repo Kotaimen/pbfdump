@@ -105,9 +105,9 @@ class PBFParser(object):
         else:
             pool = multiprocessing.Pool(processes=self._worker)
 
-            for map_result in pool.imap(self._mapper, self._blocks):
+            for map_result in pool.imap_unordered(self._mapper, self._blocks):
                 current_block += 1
                 reducer(current_block, map_result)
                 del map_result
-                
+
         return self._reducer.report()

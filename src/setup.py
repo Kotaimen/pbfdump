@@ -3,7 +3,7 @@ from distutils.core import setup, Extension
 nodecache = Extension('nodecache',
                     sources=['pbfdump/nodecache.cpp'],
                     include_dirs=[ '/usr/local/include', '/usr/include'],
-                    libraries=['boost_python-mt'],
+                    libraries=['boost_python'],
                     library_dirs=['/usr/local/lib', '/usr/lib'],
 
                     )

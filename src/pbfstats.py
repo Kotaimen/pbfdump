@@ -13,12 +13,17 @@ import pbfdump
 
 class Mapper(pbfdump.Mapper):
 
-
     def setup(self):
         self.num_nodes = 0
+        self.num_coords = 0
+        self.num_ways = 0
+        self.num_relations = 0
 
     def map_nodes(self, nodes):
-        self.num_nodes = len(list(nodes))
+        for node in nodes:
+            if node[1]:
+                self.num_nodes += 1
+            self.num_coords += 1
 
     def map_ways(self, ways):
         self.num_ways = len(list(ways))
@@ -27,31 +32,34 @@ class Mapper(pbfdump.Mapper):
         self.num_relations = len(list(relations))
 
     def result(self):
-        return self.num_nodes, self.num_ways, self.num_relations
+        return (self.num_coords, self.num_nodes,
+                self.num_ways, self.num_relations)
 
 
 class Reducer(pbfdump.Reducer):
 
     def __init__(self):
+        self.total_coords = 0
         self.total_nodes = 0
         self.total_ways = 0
         self.total_relations = 0
 
     def reduce(self, map_result):
-        num_nodes, num_ways, num_relations = map_result
+        num_coords, num_nodes, num_ways, num_relations = map_result
+        self.total_coords += num_coords
         self.total_nodes += num_nodes
         self.total_ways += num_ways
         self.total_relations += num_relations
 
     def progress(self):
-        return '%0dk nodes, %dk ways, %dk relations' % (self.total_nodes / 1000,
-                                                        self.total_ways / 1000,
-                                                        self.total_relations / 1000)
+        return '%dk coords, %dk nodes, %dk ways, %dk relations' % \
+            (self.total_coords / 1000, self.total_nodes / 1000,
+             self.total_ways / 1000, self.total_relations / 1000)
 
     def report(self):
-        return '%0d nodes, %d ways, %d relations' % (self.total_nodes,
-                                                     self.total_ways,
-                                                     self.total_relations)
+        return '%d coords, %d nodes, %d ways, %d relations' % \
+            (self.total_coords, self.total_nodes,
+             self.total_ways, self.total_relations)
 
 #===============================================================================
 # Main
